@@ -13,9 +13,13 @@
 // 
 using System.Collections.Generic;
 using System.Linq;
-using Dynamo.Nodes;
+
+using Dynamo.Models;
+
 using NUnit.Framework;
 using ProtoCore.AST.AssociativeAST;
+using DoubleSlider = DSCoreNodesUI.Input.DoubleSlider;
+using IntegerSlider = DSCoreNodesUI.Input.IntegerSlider;
 
 namespace DSCoreNodesTests
 {
@@ -27,7 +31,7 @@ namespace DSCoreNodesTests
         [Category("UnitTests")]
         public void SliderASTGeneration()
         {
-            var sliderNode = new DoubleSlider(null) { Value = 10 };
+            var sliderNode = new DoubleSlider() { Value = 10 };
             var buildOutput = sliderNode.BuildOutputAst(new List<AssociativeNode>());
 
             Assert.AreEqual(
@@ -39,18 +43,40 @@ namespace DSCoreNodesTests
         [Category("Failure")]
         public void SliderMaxValue()
         {
-            var sliderNode = new DoubleSlider(null) { Value = 500 };
-            sliderNode.UpdateValue("Value", "1000");
+            var sliderNode = new DoubleSlider() { Value = 500 };
+            var updateValueParams = new UpdateValueParams("Value", "1000");
+            sliderNode.UpdateValue(updateValueParams);
 
             Assert.AreEqual(
                  1000,
                  sliderNode.Max);
 
-            sliderNode.UpdateValue("Value", "-1");
+            updateValueParams = new UpdateValueParams("Value", "-1");
+            sliderNode.UpdateValue(updateValueParams);
 
             Assert.AreEqual(
                  -1,
                  sliderNode.Min);
+        }
+
+        [Test]
+        [Category("Failure")]
+        public void IntegerSliderMaxValue()
+        {
+            var integerSliderNode = new IntegerSlider() { Value = 500 };
+            var updateValueParams = new UpdateValueParams("Value", "1000");
+            integerSliderNode.UpdateValue(updateValueParams);
+
+            Assert.AreEqual(
+                 1000,
+                 integerSliderNode.Max);
+
+            updateValueParams = new UpdateValueParams("Value", "-1");
+            integerSliderNode.UpdateValue(updateValueParams);
+
+            Assert.AreEqual(
+                 -1,
+                 integerSliderNode.Min);
         }
     }
 }

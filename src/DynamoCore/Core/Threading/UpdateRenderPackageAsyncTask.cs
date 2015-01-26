@@ -1,10 +1,6 @@
-﻿#if ENABLE_DYNAMO_SCHEDULER
-
-using System;
+﻿using System;
 using System.Collections;
 using System.Linq;
-
-using GraphLayout;
 
 using ProtoCore.Mirror;
 using System.Collections.Generic;
@@ -61,7 +57,7 @@ namespace Dynamo.Core.Threading
 
         #region Public Class Operational Methods
 
-        internal UpdateRenderPackageAsyncTask(DynamoScheduler scheduler)
+        internal UpdateRenderPackageAsyncTask(IScheduler scheduler)
             : base(scheduler)
         {
             nodeGuid = Guid.Empty;
@@ -80,7 +76,7 @@ namespace Dynamo.Core.Threading
                 throw new ArgumentNullException("initParams.DrawableIds");
 
             var nodeModel = initParams.Node;
-            if (!nodeModel.IsUpdated && (!nodeModel.RequiresRecalc))
+            if (!nodeModel.IsUpdated)
                 return false; // Not has not been updated at all.
 
             // If a node is in either of the following states, then it will not 
@@ -120,9 +116,9 @@ namespace Dynamo.Core.Threading
 
             var data = from varName in drawableIds
                        select engineController.GetMirror(varName)
-                       into mirror
-                       where mirror != null
-                       select mirror.GetData();
+                           into mirror
+                           where mirror != null
+                           select mirror.GetData();
 
             var labelMap = new List<string>();
             foreach (var mirrorData in data)
@@ -237,5 +233,3 @@ namespace Dynamo.Core.Threading
         #endregion
     }
 }
-
-#endif

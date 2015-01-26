@@ -1,66 +1,54 @@
 ﻿using System;
-using System.Collections.Generic;
-
-using Dynamo.UI.Commands;
-using Dynamo.Utilities;
-using DynCmd = Dynamo.ViewModels.DynamoViewModel;
+using Dynamo.Interfaces;
+using Dynamo.Models;
 
 namespace Dynamo.Search.SearchElements
 {
-    public class CustomNodeSearchElement : NodeSearchElement, IEquatable<CustomNodeSearchElement>
+    /// <summary>
+    ///     Search element for custom nodes.
+    /// </summary>
+    public class CustomNodeSearchElement : NodeSearchElement
     {
-        public Guid Guid { get; internal set; }
+        private readonly ICustomNodeSource customNodeManager;
+        public Guid ID { get; private set; }
+        private string path;
 
-        private string _path;
+        /// <summary>
+        ///     Path to this custom node in disk, used in the Edit context menu.
+        /// </summary>
         public string Path
         {
-            get { return _path; }
-            set { 
-                _path = value; 
-                RaisePropertyChanged("Path"); 
-            }
-        }
-
-        public override string Type { get { return "Custom Node"; } }
-
-        public CustomNodeSearchElement(CustomNodeInfo info) : base(info.Name, info.Description, new List<string>())
-        {
-            this.Node = null;
-            this.FullCategoryName = info.Category;
-            this.Guid = info.Guid;
-            this._path = info.Path;
-        }
-
-        public override NodeSearchElement Copy()
-        {
-            return
-                new CustomNodeSearchElement(new CustomNodeInfo(this.Guid, this.Name, this.FullCategoryName,
-                                                               this.Description, this.Path));
-        }
-
-        public override bool Equals(object obj)
-        {
-            if (obj == null || GetType() != obj.GetType())
+            get { return path; }
+            private set
             {
-                return false;
+                if (value == path) return;
+                path = value;
+                OnPropertyChanged("Path");
             }
-
-            return this.Equals(obj as NodeSearchElement);
         }
 
-        public override int GetHashCode()
+        public CustomNodeSearchElement(ICustomNodeSource customNodeManager, CustomNodeInfo info)
         {
-            return this.Guid.GetHashCode() + this.Type.GetHashCode() + this.Name.GetHashCode() + this.Description.GetHashCode();
+            this.customNodeManager = customNodeManager;
+            SyncWithCustomNodeInfo(info);
         }
 
-        public bool Equals(CustomNodeSearchElement other)
+        /// <summary>
+        ///     Updates the properties of this search element.
+        /// </summary>
+        /// <param name="info"></param>
+        public void SyncWithCustomNodeInfo(CustomNodeInfo info)
         {
-            return other.Guid == this.Guid;
+            ID = info.FunctionId;
+            Name = info.Name;
+            FullCategoryName = info.Category;
+            Description = info.Description;
+            Path = info.Path;
         }
 
-        public new bool Equals(NodeSearchElement other)
+        protected override NodeModel ConstructNewNodeModel()
         {
-            return other is CustomNodeSearchElement && this.Equals(other as CustomNodeSearchElement);
+            return customNodeManager.CreateCustomNodeInstance(ID);
         }
     }
 }

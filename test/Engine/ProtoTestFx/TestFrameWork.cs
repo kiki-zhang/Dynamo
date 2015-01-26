@@ -41,6 +41,7 @@ namespace ProtoTestFx.TD
         {
             return testCore;
         }
+
         public ProtoCore.Core SetupTestCore()
         {
             testCore = new ProtoCore.Core(new ProtoCore.Options());
@@ -148,7 +149,7 @@ namespace ProtoTestFx.TD
 
         public ExecutionMirror RunScript(string pathname, string errorstring = "", string includePath = "")
         {
-            var testCore = SetupTestCore();
+            SetupTestCore();
             Console.WriteLine( errorstring);
             if (!String.IsNullOrEmpty(includePath))
             {
@@ -239,7 +240,7 @@ namespace ProtoTestFx.TD
             }
             else
             {
-                var testCore = SetupTestCore();
+                SetupTestCore();
                 if (!String.IsNullOrEmpty(includePath))
                 {
                     if (System.IO.Directory.Exists(includePath))
@@ -280,7 +281,7 @@ namespace ProtoTestFx.TD
         /// <returns></returns>
         public ExecutionMirror RunASTSource(List<ProtoCore.AST.AssociativeAST.AssociativeNode> astList, string errorstring = "", string includePath = "")
         {
-            var testCore = SetupTestCore();
+            SetupTestCore();
             if (!String.IsNullOrEmpty(includePath))
             {
                 if (System.IO.Directory.Exists(includePath))
@@ -521,18 +522,6 @@ namespace ProtoTestFx.TD
                 else
                 {
                     ProtoCore.DSASM.HeapElement he = testMirror.MirrorTarget.rmem.Heap.GetHeapElement(sv);
-
-                    if (he.Refcount != referencCount)
-                    {
-                        Assert.Fail(String.Format("\t{0}'s reference count is {1}, which is not equal to expected {2}", dsVariable, he.Refcount, referencCount));
-                    }
-                    else if (referencCount > 0)
-                    {
-                        if (!he.Active)
-                        {
-                            Assert.Fail(String.Format("\t{0}'s reference count == {1}, but somehow it is makred as inactive.", dsVariable, referencCount));
-                        }
-                    }
                 }
             }
             catch (NotImplementedException)
@@ -617,12 +606,12 @@ namespace ProtoTestFx.TD
             Assert.IsTrue(warningCount == count, mErrorMessage);
         }
 
-        public static void VerifyRuntimeWarning(ProtoCore.RuntimeData.WarningID id)
+        public static void VerifyRuntimeWarning(ProtoCore.Runtime.WarningID id)
         {
             VerifyRuntimeWarning(testCore, id);
         }
 
-        public static void VerifyRuntimeWarning(ProtoCore.Core core, ProtoCore.RuntimeData.WarningID id)
+        public static void VerifyRuntimeWarning(ProtoCore.Core core, ProtoCore.Runtime.WarningID id)
         {
             Assert.IsTrue(core.RuntimeStatus.Warnings.Any(w => w.ID == id), mErrorMessage);
         }
@@ -772,7 +761,11 @@ namespace ProtoTestFx.TD
 
         public void CleanUp()
         {
-            testCore.Cleanup();
+            if (testCore != null)
+            {
+                testCore.Cleanup();
+                testCore = null;
+            }
         }
     }
 }

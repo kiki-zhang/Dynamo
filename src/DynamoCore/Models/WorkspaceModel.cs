@@ -21,11 +21,31 @@ namespace Dynamo.Models
 {
     public abstract class WorkspaceModel : NotificationObject, ILocatable, IUndoRedoRecorderClient, ILogSource, IDisposable
     {
+
         public const double ZOOM_MAXIMUM = 4.0;
         public const double ZOOM_MINIMUM = 0.01;
 
-        #region private members
-        
+        #region private/internal members
+
+        /// <summary>
+        ///     The offset of the elements in the current paste operation
+        /// </summary>
+        private int currentPasteOffset = 0;
+        internal int CurrentPasteOffset
+        {
+            get { return currentPasteOffset; }
+        }
+
+        /// <summary>
+        ///     The step to offset elements between subsequent paste operations
+        /// </summary>
+        internal static readonly int PASTE_OFFSET_STEP = 10;
+
+        /// <summary>
+        ///     The maximum paste offset before reset
+        /// </summary>
+        internal static readonly int PASTE_OFFSET_MAX = 60;
+
         private string fileName;
         private string name;
         private double height = 100;
@@ -39,6 +59,7 @@ namespace Dynamo.Models
         private readonly ObservableCollection<NodeModel> nodes;
         private readonly ObservableCollection<NoteModel> notes;
         private readonly UndoRedoRecorder undoRecorder;
+        private Guid guid;
 
         #endregion
 
@@ -394,8 +415,27 @@ namespace Dynamo.Models
             get { return undoRecorder; }
         }
 
+        /// <summary>
+        /// A unique identifier for the workspace.
+        /// </summary>
+        public Guid Guid
+        {
+            get { return guid; }
+        }
+
         public ElementResolver ElementResolver { get; private set; }
 
+        private bool runEnabled;
+        public bool RunEnabled
+        {
+            get { return runEnabled; }
+            set
+            {
+                if (Equals(value, runEnabled)) return;
+                runEnabled = value;
+                RaisePropertyChanged("RunEnabled");
+            }
+        }
         #endregion
 
         #region constructors
@@ -404,6 +444,8 @@ namespace Dynamo.Models
             string name, IEnumerable<NodeModel> e, IEnumerable<NoteModel> n,
             double x, double y, NodeFactory factory, ElementResolver elementResolver, string fileName="")
         {
+            guid = Guid.NewGuid();
+
             Name = name;
 
             nodes = new ObservableCollection<NodeModel>(e);
@@ -453,7 +495,7 @@ namespace Dynamo.Models
         /// </summary>
         public virtual void Clear()
         {
-            Log("Clearing workspace...");
+            Log(Properties.Resources.ClearingWorkSpace);
 
             foreach (NodeModel el in Nodes)
             {
@@ -488,7 +530,7 @@ namespace Dynamo.Models
         {
             if (String.IsNullOrEmpty(newPath)) return false;
 
-            Log("Saving " + newPath + "...");
+            Log(String.Format(Properties.Resources.SavingInProgress, newPath));
             try
             {
                 if (SaveInternal(newPath, core))
@@ -596,7 +638,7 @@ namespace Dynamo.Models
 
         public NoteModel AddNote(bool centerNote, double xPos, double yPos, string text, Guid id)
         {
-            var noteModel = new NoteModel(xPos, yPos, string.IsNullOrEmpty(text) ? "New Note" : text, id);
+            var noteModel = new NoteModel(xPos, yPos, string.IsNullOrEmpty(text) ? Properties.Resources.NewNoteString : text, id);
 
             //if we have null parameters, the note is being added
             //from the menu, center the view on the note
@@ -638,6 +680,14 @@ namespace Dynamo.Models
         public void ReportPosition()
         {
             RaisePropertyChanged("Position");
+        }
+
+        /// <summary>
+        ///     Increment the current paste offset to prevent overlapping pasted elements
+        /// </summary>
+        internal void IncrementPasteOffset()
+        {
+            this.currentPasteOffset = (this.currentPasteOffset + PASTE_OFFSET_STEP) % PASTE_OFFSET_MAX;
         }
 
         #endregion
@@ -755,7 +805,8 @@ namespace Dynamo.Models
             }
             catch (Exception ex)
             {
-                Debug.WriteLine(ex.Message + " : " + ex.StackTrace);
+                Log(ex.Message);
+                Log(ex.StackTrace);
                 return false;
             }
         }
